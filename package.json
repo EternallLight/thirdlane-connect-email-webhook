@@ -1,0 +1,39 @@
+{
+    "name": "thirdlane-connect-email-webhook",
+    "version": "1.0.0",
+    "description": "A lightweight service to get notifications on Thirdlane Connect for new mail.",
+    "author": " <agrunev@thirdlane.com>",
+    "scripts": {
+        "start": "node thirdlane-connect-email-webhook.js"
+    },
+    "bin": {
+        "thirdlane-connect-email-webhook": "thirdlane-connect-email-webhook.js"
+    },
+    "main": "thirdlane-connect-email-webhook.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/EternallLight/thirdlane-connect-email-webhook"
+    },
+    "keywords": [
+        "thirdlane",
+        "imap",
+        "email",
+        "webhook",
+        "notification"
+    ],
+    "engines": {
+        "node": ">=7.6"
+    },
+    "dependencies": {
+        "emailjs-imap-client": "~2.0.5",
+        "envelope": "~1.0.6",
+        "lodash": "^4.17.10",
+        "timestamped-console": "~0.1.0"
+    },
+    "preferGlobal": false,
+    "private": false,
+    "devDependencies": {
+        "eslint": "^5.4.0",
+        "eslint-config-google": "^0.9.1"
+    }
+}

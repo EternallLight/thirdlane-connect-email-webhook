@@ -31,7 +31,7 @@ module.exports = [
 
         // truncate fetched mail to this many bytes
         // (may fail to extract content for large messages, but helps to avoid DoS)
-        sizeLimit: 10 * 1024,
+        sizeLimit: 1000 * 1024,
 
         /* :: Thirdlane Connect :: */
         webhookURL: 'https://connect.thirdlane.com/integration/webhooks/fddde9...',
@@ -39,5 +39,14 @@ module.exports = [
         // show Cc: and Bcc: addresses in Thirdlane notifications?
         // (listed for sent mails together with receivers in To: field)
         showCopy: true,
+
+        // HTML emails converter options. See all options at https://github.com/werk85/node-html-to-text.
+        htmlToTextOptions: {
+            wordwrap: false,
+            preserveNewlines: true,
+            singleNewLineParagraphs: true,
+            ignoreHref: true,
+            ignoreImage: true,
+        },
     },
 ];

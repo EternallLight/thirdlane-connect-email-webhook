@@ -20,11 +20,19 @@
 const console = require('timestamped-console')('yyyy-mm-dd HH:MM');
 const ImapClient = require('emailjs-imap-client');
 const Envelope = require('envelope');
+
+const htmlToText = require('html-to-text');
 const _ = require('lodash');
 
 // built-in module dependencies
 const HTTPS = require('https');
 const URL = require('url');
+
+const htmlToTextOptionsDefault = {
+    wordwrap: false,
+    preserveNewlines: true,
+    singleNewLineParagraphs: true,
+};
 
 // load configuration, optionally from path set as environment variable
 const configs = require(process.env.CONFIG || './config.js');
@@ -33,8 +41,14 @@ if (!_.isArray(configs) || !configs.length) {
     throw new Error('Config must be passed in form of non-empty array.');
 }
 
-// parse webhook URL only once
-configs.forEach((c) => c.webhookURL = URL.parse(c.webhookURL));
+configs.forEach((c) => {
+    // Parse webhook URL only once
+    c.webhookURL = URL.parse(c.webhookURL);
+    // Update html-to-text config.
+    if (c.htmlToTextOptions) {
+        c.htmlToTextOptions = Object.assign({}, htmlToTextOptionsDefault, c.htmlToTextOptions);
+    }
+});
 
 // mention in the log when process exits
 process.on('exit', () => console.log('Exiting…'));
@@ -247,7 +261,7 @@ async function mailToNotification(client, id, config) {
         const contentTree = new Envelope(rawBody);
 
         // try to find plaintext content
-        content = findTextContent(contentTree);
+        content = findTextContent(contentTree, config.htmlToTextOptions);
     } catch (error) {
         // log error, but move on
         console.error('Could not parse content of mail #%d.', id);
@@ -283,16 +297,21 @@ async function mailToNotification(client, id, config) {
 
 
 // assume most common MIME tree to recursively find plaintext in a multipart mail parsed by envelope
-function findTextContent(parts) {
-    // check if passed parts object contains desired plaintext content
-    if (parts.header && parts.header.contentType && parts.header.contentType.mime === 'text/plain') {
-        // return plaintext
-        return parts['0'];
-    }
-    // more levels to check?
-    else if (parts['0'] && parts['0'].header) {
+function findTextContent(parts, htmlToTextOptions) {
+    if (parts.header && parts.header.contentType) { // check if passed parts object contains desired plaintext content
+        switch (parts.header.contentType.mime) {
+            case 'text/html':
+                return htmlToText.fromString(parts[0], htmlToTextOptions);
+                break;
+            case 'text/plain':
+                return parts[0];
+                break;
+            default:
+                return findTextContent(parts['0'], htmlToTextOptions);
+        }
+    } else if (parts['0'] && parts['0'].header) { // more levels to check?
         // recurse to deeper level
-        return findTextContent(parts['0']);
+        return findTextContent(parts['0'], htmlToTextOptions);
     }
 
     // nothing found

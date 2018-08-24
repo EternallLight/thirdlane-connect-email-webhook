@@ -1,11 +1,18 @@
 # Thirdlane Connect Email Webhook
 
 This is a modified version of [Slack Email Webhook](https://github.com/bitfasching/slack-email-webhook) project by Nick Schwarzenberg to fit Thirdlane Connect requirenments. 
-A possibility to check several mail accounts was added - you should specify an array of configs in config.js file. Each email goes in a separate notification. This modification also converts html emails to plain text and send their contents to Webhook in a human-readable form.
+
+Differences from the original:
+
+- A possibility to check several mail accounts was added - you should specify an array of configs in config.js file. 
+- Each email goes in a separate notification. 
+- Added HTML emails support - html emails are converted to plain text and send their contents to Webhook in a human-readable form.
+- Added **keepUnread** option. If set to true, the email in mailbox will be kept unread after sending the notification to a Thirdlane Connect channel.
+- Identifiers of notified emails are saved on the file system, so that the script can keep track and not notify about same emails twice.
 
 ---
 
-A lightweight service to get notifications on [Thirdlane Connect](https://www.thirdlane.com/) for received and sent mail.
+Thirdlane Connect Email Webhook is a lightweight service to get notifications on [Thirdlane Connect](https://www.thirdlane.com/) for received and sent mail.
 
 - connects to an IMAP account and posts as incoming webhook
 - can be run as multiple instances to monitor more than one mailbox

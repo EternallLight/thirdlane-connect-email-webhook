@@ -40,6 +40,9 @@ module.exports = [
         // (listed for sent mails together with receivers in To: field)
         showCopy: true,
 
+        // If set to true, the posted messages will be re-marked as unread in your mailbox.
+        keepUnread: true,
+
         // HTML emails converter options. See all options at https://github.com/werk85/node-html-to-text.
         htmlToTextOptions: {
             wordwrap: false,

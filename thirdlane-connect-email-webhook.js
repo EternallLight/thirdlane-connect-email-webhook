@@ -24,6 +24,11 @@ const Envelope = require('envelope');
 const htmlToText = require('html-to-text');
 const _ = require('lodash');
 
+const fs = require('fs');
+const promisify = require('util').promisify;
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
+
 // built-in module dependencies
 const HTTPS = require('https');
 const URL = require('url');
@@ -217,9 +222,12 @@ async function queryMailbox(client, config) {
 
 
 // fetch mails by sequence numbers
-async function fetchMails(client, ids, config, removeSeen) {
+async function fetchMails(client, ids, config) {
     // notifications to send to Thirdlane Connect
     let notifications = [];
+
+    // Removing emails that were already notified with Webhook.
+    ids = await filterNotifierIds(ids, config);
 
     // for each sequence number…
     for (let id of ids) {
@@ -231,9 +239,44 @@ async function fetchMails(client, ids, config, removeSeen) {
     }
 
     // send notifications to Thirdlane Connect if any
-    sendToThirdlaneConnect(notifications, config);
+    sendToThirdlaneConnect(notifications, config).then(async () => {
+        if (ids.length) {
+            await saveNotified(ids, config);
+            console.log(`The emails with following IDs were notified via webhook: ${ids.join(', ')}`);
+        } else {
+            console.log(`All new emails were already notified via Webhook. No notifications have been sent.`);
+        }
+    });
 }
 
+/**
+ * Removes ids that were already notified via a webhook.
+ *
+ * @param {Number[]} ids
+ * @param {Object} config
+ * @return {Promise<Number[]>}
+ */
+async function filterNotifierIds(ids, config) {
+    const filePath = `${__dirname}/history/${config.username}.json`;
+    let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'});
+    notified = notified ? JSON.parse(notified) : {ids: []};
+    return ids.filter((id) => !notified.ids.includes(id));
+}
+
+/**
+ * Adds the given ids to the notified list in json file.
+ *
+ * @param {Number[]} ids
+ * @param {Object} config
+ * @return {Promise<void>}
+ */
+async function saveNotified(ids, config) {
+    const filePath = `${__dirname}/history/${config.username}.json`;
+    let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'}) || {ids: []};
+    notified = notified ? JSON.parse(notified) : {ids: []};
+    notified.ids = notified.ids.concat(ids);
+    return writeFile(`${__dirname}/history/${config.username}.json`, JSON.stringify(notified, null, 4));
+}
 
 // fetch mail by its sequence number, parse and turn into a Thirdlane Connect notification
 async function mailToNotification(client, id, config) {
@@ -243,7 +286,7 @@ async function mailToNotification(client, id, config) {
 
     try {
         // try to fetch header and content from server
-        const messageItems = await client.listMessages(config.mailbox, id, ['envelope', `body[]<0.${config.sizeLimit}>`]);
+        const messageItems = await client.listMessages(config.mailbox, id, ['envelope', `${config.keepUnread ? 'body.peek[]' : 'body[]'}<0.${config.sizeLimit}>`]);
         header = messageItems[0]['envelope'];
         rawBody = messageItems[0]['body[]'];
     } catch (error) {
@@ -284,7 +327,7 @@ async function mailToNotification(client, id, config) {
 
     // create Thirdlane Connect notification with common content
     const notification = {
-        text: header.subject,
+        text: `New message in *${config.username}*!`,
         attachments: [{
             title: header.subject,
             fields,
@@ -328,7 +371,9 @@ function findTextContent(parts, htmlToTextOptions) {
 // send an array of one or more notifications to a Thirdlane Connect webhook
 function sendToThirdlaneConnect(notifications, config) {
     // return if no notifications to send
-    if (notifications.length === 0) return;
+    if (notifications.length === 0) {
+        return Promise.resolve();
+    }
 
     let queue = [];
     notifications.forEach((notification) => {
@@ -344,7 +389,7 @@ function sendToThirdlaneConnect(notifications, config) {
             host: config.webhookURL.host,
             path: config.webhookURL.path,
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(payload),
             },
         };

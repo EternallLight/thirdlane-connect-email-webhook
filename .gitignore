@@ -1,4 +1,4 @@
 node_modules/
 config.js
 .idea
-history/*
+history/*.json

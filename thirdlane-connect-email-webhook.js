@@ -259,7 +259,6 @@ async function fetchMails(client, ids, config) {
 async function filterNotifierIds(ids, config) {
     const filePath = `${__dirname}/history/${config.username}.json`;
     let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'});
-    console.log('notified type ' + typeof notified);
     notified = notified ? JSON.parse(notified) : {ids: []};
     return ids.filter((id) => !notified.ids.includes(id));
 }
@@ -326,17 +325,17 @@ async function mailToNotification(client, id, config) {
         }
     }
 
+    content = content || '_No message text available._';
+
     // create Thirdlane Connect notification with common content
-    const notification = {
+    return {
         text: `New message in *${config.username}*!`,
         attachments: [{
             title: header.subject,
             fields,
-            text: content || '_No message text available._',
+            text: content,
         }],
     };
-
-    return notification;
 }
 
 
@@ -346,10 +345,8 @@ function findTextContent(parts, htmlToTextOptions) {
         switch (parts.header.contentType.mime) {
             case 'text/html':
                 return htmlToText.fromString(parts[0], htmlToTextOptions);
-                break;
             case 'text/plain':
                 return parts[0];
-                break;
             default:
                 return findTextContent(parts['0'], htmlToTextOptions);
         }

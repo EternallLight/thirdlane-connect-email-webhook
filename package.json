@@ -1,6 +1,6 @@
 {
     "name": "thirdlane-connect-email-webhook",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "description": "A lightweight service to get notifications on Thirdlane Connect for new mail.",
     "author": " <agrunev@thirdlane.com>",
     "scripts": {

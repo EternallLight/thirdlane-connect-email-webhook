@@ -259,6 +259,7 @@ async function fetchMails(client, ids, config) {
 async function filterNotifierIds(ids, config) {
     const filePath = `${__dirname}/history/${config.username}.json`;
     let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'});
+    console.log('notified type ' + typeof notified);
     notified = notified ? JSON.parse(notified) : {ids: []};
     return ids.filter((id) => !notified.ids.includes(id));
 }
@@ -272,7 +273,7 @@ async function filterNotifierIds(ids, config) {
  */
 async function saveNotified(ids, config) {
     const filePath = `${__dirname}/history/${config.username}.json`;
-    let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'}) || {ids: []};
+    let notified = await readFile(filePath, {encoding: 'utf8', flag: 'a+'});
     notified = notified ? JSON.parse(notified) : {ids: []};
     notified.ids = notified.ids.concat(ids);
     return writeFile(`${__dirname}/history/${config.username}.json`, JSON.stringify(notified, null, 4));
